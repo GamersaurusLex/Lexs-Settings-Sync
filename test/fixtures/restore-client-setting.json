@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "exportedAt": "2026-11-09T23:01:00.000Z",
+  "world": "settings-sync-ui-test",
+  "worldTitle": "Settings Sync UI Test",
+  "systemId": "pf2e",
+  "systemVersion": "8.6.1",
+  "packages": {},
+  "settings": [
+    {
+      "fullKey": "core.leftClickRelease",
+      "namespace": "core",
+      "key": "leftClickRelease",
+      "scope": "client",
+      "value": false
+    }
+  ]
+}

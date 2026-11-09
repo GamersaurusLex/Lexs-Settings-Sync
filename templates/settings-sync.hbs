@@ -1,0 +1,31 @@
+<div class="settings-sync-app">
+  <input class="settings-sync-file" type="file" accept="application/json,.json" hidden>
+  {{#unless hasProfile}}
+    <p class="settings-sync-lede">Export this world's shared settings, then import that profile into another world. Every non-default target value receives review before it changes.</p>
+    <div class="settings-sync-actions">
+      <button type="button" data-action="exportProfile"><i class="fa-solid fa-file-export"></i> Export This World</button>
+      <button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import a Profile</button>
+    </div>
+    <p class="hint">Per-user values, campaign identity, encounter Manual Mode, Automatic Rune Progression, Variant Rules, Settings Vault state, and other protected local settings stay out.</p>
+  {{else}}
+    <header class="settings-sync-summary">
+      <div><strong>{{profile.worldTitle}}</strong> → <strong>{{profile.systemId}}</strong><br><small>Exported {{profile.exportedAt}}</small></div>
+      <div><strong>{{applyCount}}</strong> selected for <strong>{{@root.profile.settings.length}}</strong> source settings{{#if sensitiveCount}} · {{sensitiveCount}} sensitive row(s){{/if}}</div>
+    </header>
+    <div class="settings-sync-actions">
+      <button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Choose Another Profile</button>
+      <button type="button" data-action="clearProfile"><i class="fa-solid fa-xmark"></i> Clear</button>
+      <button type="button" data-action="applySelected"><i class="fa-solid fa-check"></i> Apply Selected</button>
+    </div>
+    <div class="settings-sync-table-wrap">
+      <table class="settings-sync-table">
+        <thead><tr><th>Apply</th><th>Setting</th><th>Value</th><th>Scope</th><th>Reason</th></tr></thead>
+        <tbody>{{#each rows}}<tr class="status-{{status}}">
+          <td><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}></td>
+          <td><code>{{fullKey}}</code></td><td>{{valueLabel}}</td><td>{{scope}}</td><td><span class="settings-sync-status">{{status}}</span> {{reason}}</td>
+        </tr>{{/each}}</tbody>
+      </table>
+    </div>
+    {{#if skipped.length}}<details class="settings-sync-skipped"><summary>{{skipped.length}} setting(s) left out</summary><ul>{{#each skipped}}<li><code>{{fullKey}}</code> — {{reason}}</li>{{/each}}</ul></details>{{/if}}
+  {{/unless}}
+</div>

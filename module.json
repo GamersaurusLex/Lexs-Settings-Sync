@@ -1,0 +1,13 @@
+{
+  "id": "settings-sync",
+  "title": "Lex's Settings Sync",
+  "description": "Safely export, review, and import Foundry world settings with explicit overwrite protection and Lex's cross-world policies.",
+  "version": "0.1.0",
+  "authors": [{ "name": "Gamersaurus Lex" }],
+  "url": "https://github.com/GamersaurusLex/Lexs-Settings-Sync",
+  "manifest": "https://github.com/GamersaurusLex/Lexs-Settings-Sync/releases/latest/download/module.json",
+  "download": "https://github.com/GamersaurusLex/Lexs-Settings-Sync/releases/download/v0.1.0/settings-sync.zip",
+  "compatibility": { "minimum": "14", "verified": "14.369", "maximum": "14" },
+  "esmodules": ["scripts/settings-sync.mjs"],
+  "styles": ["styles/settings-sync.css"]
+}
