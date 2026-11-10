@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Reworked the review screen into one main scroll area with a fixed Review Selected Changes control.
+- Added a plain-language confirmation list before any setting or module change is committed.
+- Explicitly capture native Core configuration panes, including User Permissions, UI, Audio/Video, Prototype Token Overrides, fonts, combat tracker, dice, compendium art, and default sheets.
+- Require an explicit selection before applying User Permissions and exclude unrelated hidden Core bookkeeping from profiles.
+
 ## 0.2.0
 
 - Rebuilt the profile workflow around readable policy rules instead of raw settings dumps.

@@ -1,4 +1,4 @@
-import { MODULE_ID, buildModulePlan, buildPlan, isExcluded, isSensitive, namespaceOf } from "./plan.mjs";
+import { MODULE_ID, buildModulePlan, buildPlan, isExcluded, isSensitive, isVisibleOrNativeCoreSetting, namespaceOf } from "./plan.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 const PROFILE_DIR = "settings-sync/profiles";
@@ -23,7 +23,41 @@ function targetSettings() {
 
 function shouldExport(setting) {
   const module = game.modules.get(setting.namespace);
-  return setting.config !== false && !isExcluded(setting.fullKey) && (!module || module.active);
+  return isVisibleOrNativeCoreSetting(setting) && !isExcluded(setting.fullKey) && (!module || module.active);
+}
+
+function displayValue(value) {
+  if (value === true) return "On";
+  if (value === false) return "Off";
+  if (value === null || value === undefined || value === "") return "Empty";
+  if (Array.isArray(value)) return `${value.length} selected`;
+  if (typeof value === "object") return `Configured (${Object.keys(value).length} saved value${Object.keys(value).length === 1 ? "" : "s"})`;
+  const text = String(value);
+  return text.length > 72 ? `${text.slice(0, 69)}…` : text;
+}
+
+function titleize(value) { return String(value).toLowerCase().split(/[_-]+/).map(word => word ? `${word[0].toUpperCase()}${word.slice(1)}` : word).join(" "); }
+function nativeCorePreview(fullKey, current, next) {
+  if (fullKey !== "core.permissions") return `Replace this saved Core configuration (${Object.keys(next ?? {}).length} values).`;
+  const changed = new Set([...Object.keys(current ?? {}), ...Object.keys(next ?? {})]).values();
+  const labels = [...changed].filter(key => JSON.stringify(current?.[key]) !== JSON.stringify(next?.[key])).map(titleize);
+  const sample = labels.slice(0, 3).join(", ");
+  return `${labels.length} permission rule${labels.length === 1 ? "" : "s"} will change${sample ? `: ${sample}${labels.length > 3 ? ", and more" : ""}` : ""}.`;
+}
+
+function changePreview(rows, modules) {
+  const settings = rows.map(row => {
+    const setting = game.settings.settings.get(row.fullKey);
+    const label = game.i18n.localize(setting?.name ?? row.fullKey);
+    let current = "Current value unavailable";
+    try { current = displayValue(game.settings.get(row.namespace, row.key)); }
+    catch (_error) { /* Failed writes are reported after confirmation. */ }
+    const currentValue = (() => { try { return game.settings.get(row.namespace, row.key); } catch (_error) { return undefined; } })();
+    const detail = row.namespace === "core" && typeof row.value === "object" ? nativeCorePreview(row.fullKey, currentValue, row.value) : `${current} → ${displayValue(row.value)}`;
+    return `<li><strong>${esc(label)}</strong><span>${esc(detail)}</span></li>`;
+  }).join("");
+  const moduleChanges = modules.map(row => `<li><strong>${esc(row.title ?? row.id)}</strong><span>${row.status === "activate" ? "Activate" : "Deactivate"}</span></li>`).join("");
+  return `<section class="settings-sync-preview"><p>Review these changes for <strong>${esc(game.world.title)}</strong>. Nothing changes until you choose Apply.</p>${settings ? `<h3>Settings (${rows.length})</h3><ul>${settings}</ul>` : ""}${moduleChanges ? `<h3>Modules (${modules.length})</h3><ul>${moduleChanges}</ul><p>Foundry reloads after a module-state change.</p>` : ""}</section>`;
 }
 
 function exportProfile({ includeSensitive = false } = {}) {
@@ -72,7 +106,7 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const skipped = this.rows.filter(row => row.status === "skip");
     const moduleActions = this.moduleRows.map((row, moduleIndex) => ({ ...row, moduleIndex })).filter(row => row.status === "activate" || row.status === "review" || row.status === "target-only");
     const unavailable = this.moduleRows.filter(row => row.status === "unavailable");
-    const policyGroups = this.profile ? [...new Set(this.profile.settings.map(setting => setting.namespace))].sort().map(namespace => ({ namespace, policy: this.profile.modulePolicies?.[namespace] ?? "review" })) : [];
+    const policyGroups = this.profile ? [...new Set(this.profile.settings.filter(setting => isVisibleOrNativeCoreSetting(setting) && !isExcluded(setting.fullKey)).map(setting => setting.namespace))].sort().map(namespace => ({ namespace, policy: this.profile.modulePolicies?.[namespace] ?? "review" })) : [];
     return {
       hasProfile: Boolean(this.profile), isLibrary: this.mode === "library", profile: this.profile, library: this.library,
       recommended, review, skipped, moduleActions, unavailable, policyGroups, applyCount: recommended.length,
@@ -170,7 +204,10 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return ui.notifications.info(profileChanged ? "Profile rules updated. Save the profile to keep them in the library." : "Saved this world’s module exception.");
     }
     const confirmation = await DialogV2.confirm({ window: { title: "Apply profile changes" }, rejectClose: false,
-      content: `<p>Apply <strong>${settings.length}</strong> setting${settings.length === 1 ? "" : "s"} and <strong>${modules.length}</strong> module change${modules.length === 1 ? "" : "s"} to <strong>${esc(game.world.title)}</strong>?</p>${modules.length ? "<p>Foundry will reload after the module changes are saved.</p>" : ""}` });
+      content: changePreview(settings, modules),
+      yes: { label: `Apply ${settings.length + modules.length} chosen change${settings.length + modules.length === 1 ? "" : "s"}` },
+      no: { label: "Cancel" }
+    });
     if (!confirmation) return;
     await game.settings.set(MODULE_ID, "worldModuleExceptions", updates);
     const results = await Promise.allSettled(settings.map(row => game.settings.set(row.namespace, row.key, row.value)));

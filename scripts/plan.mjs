@@ -1,5 +1,13 @@
 export const MODULE_ID = "settings-sync";
 
+// These values power Foundry's native Core configuration panes. They are
+// intentionally synchronized even though Foundry marks them config:false/null.
+export const NATIVE_CORE_CONFIGURATION = new Set([
+  "core.uiConfig", "core.permissions", "core.rtcWorldSettings", "core.rtcClientSettings",
+  "core.prototypeTokenOverrides", "core.fonts", "core.combatTrackerConfig",
+  "core.diceConfiguration", "core.compendiumArtConfiguration", "core.sheetClasses"
+]);
+
 export const NEVER_SYNC = new Set([
   "campaign-index.campaignId", "campaign-index.campaignName", "campaign-index.lastSyncedAt", "campaign-index.reputationResourceIds",
   "influence-encounters.manualMode", "influence-encounters.manualModeAll", "influence-encounters.manualModeResearch",
@@ -19,9 +27,10 @@ export const packageActive = value => typeof value === "object" ? Boolean(value.
 export function isExcluded(fullKey) {
   const namespace = namespaceOf(fullKey);
   const key = keyPart(fullKey);
-  return NEVER_SYNC.has(fullKey) || NEVER_SYNC_NAMESPACES.has(namespace) || (namespace === "pf2e-toolbelt" && key.startsWith("arp.")) || BOOKKEEPING.test(fullKey);
+  return NEVER_SYNC.has(fullKey) || NEVER_SYNC_NAMESPACES.has(namespace) || (namespace === "pf2e-toolbelt" && key.startsWith("arp.")) || (!NATIVE_CORE_CONFIGURATION.has(fullKey) && BOOKKEEPING.test(fullKey));
 }
 
+export const isVisibleOrNativeCoreSetting = setting => setting?.config === true || NATIVE_CORE_CONFIGURATION.has(setting?.fullKey);
 export const isSensitive = fullKey => PORTABLE_SENSITIVE.has(fullKey) || SECRET_LIKE.test(keyPart(fullKey));
 export const policyFor = (profile, source) => profile.settingPolicies?.[source.fullKey] ?? profile.modulePolicies?.[namespaceOf(source.fullKey)] ?? "review";
 
@@ -29,13 +38,14 @@ function policyRow(source, target, { sourcePackages = {}, targetPackages = {}, s
   const fullKey = source.fullKey;
   if (globalNeverSync.includes(fullKey)) return { status: "skip", reason: "Your global Never Sync rule" };
   if (isExcluded(fullKey)) return { status: "skip", reason: "Protected world-local setting" };
-  if (source.config === false) return { status: "skip", reason: "Internal or cached setting" };
+  if (!isVisibleOrNativeCoreSetting(source)) return { status: "skip", reason: "Hidden or internal setting" };
   if (source.scope === "user") return { status: "skip", reason: "Per-user settings never transfer" };
   if (!target) return { status: "skip", reason: "Setting is not registered in this world" };
   if (source.scope !== target.scope) return { status: "skip", reason: "Source and target scopes differ" };
   if (target.scope === "user") return { status: "skip", reason: "Per-user settings never transfer" };
   if (same(source.value, target.value)) return { status: "skip", reason: "Already matches target" };
-  if (target.config === false) return { status: "skip", reason: "Internal or cached setting" };
+  if (!isVisibleOrNativeCoreSetting(target)) return { status: "skip", reason: "Hidden or internal setting" };
+  if (fullKey === "core.permissions") return { status: "ask", reason: "Native User Permissions configuration requires review" };
   const namespace = namespaceOf(fullKey);
   if (sourceSystemId && targetSystemId && sourceSystemId !== targetSystemId && (namespace === sourceSystemId || namespace === targetSystemId)) return { status: "ask", reason: "Game system differs" };
   if (sourcePackages[namespace] && targetPackages[namespace] && packageVersion(sourcePackages[namespace]) !== packageVersion(targetPackages[namespace])) return { status: "ask", reason: "Package version differs" };

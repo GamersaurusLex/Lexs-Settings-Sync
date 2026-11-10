@@ -1,29 +1,100 @@
 <div class="settings-sync-app">
   <input class="settings-sync-file" type="file" accept="application/json,.json" hidden>
   {{#if isLibrary}}
-    <header class="settings-sync-summary"><div><strong>Saved profile library</strong><br><small>Stored in Foundry's user data, ready for any world on this server.</small></div></header>
-    <div class="settings-sync-actions"><button type="button" data-action="closeLibrary"><i class="fa-solid fa-arrow-left"></i> Back</button><button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import a JSON File</button></div>
-    {{#if library.length}}<section class="settings-sync-bucket library"><h2><i class="fa-solid fa-folder-open"></i> Saved profiles</h2><ul>{{#each library}}<li><strong>{{name}}</strong><button type="button" data-action="openLibraryProfile" data-path="{{path}}">Open</button></li>{{/each}}</ul></section>{{else}}<p class="hint">The library is empty. Create a profile from a world and save it here.</p>{{/if}}
+    <header class="settings-sync-summary">
+      <div><strong>Saved profile library</strong><small>Profiles live in Foundry’s data folder and are available to worlds on this server.</small></div>
+    </header>
+    <div class="settings-sync-actions">
+      <button type="button" data-action="closeLibrary"><i class="fa-solid fa-arrow-left"></i> Back</button>
+      <button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import JSON file</button>
+    </div>
+    {{#if library.length}}
+      <section class="settings-sync-section library">
+        <h2>Saved profiles</h2>
+        <ul>{{#each library}}<li><strong>{{name}}</strong><button type="button" data-action="openLibraryProfile" data-path="{{path}}">Open</button></li>{{/each}}</ul>
+      </section>
+    {{else}}<p class="hint">The library is empty. Create a profile from a source world, then save it here.</p>{{/if}}
   {{else}}
     {{#if hasProfile}}
-      <header class="settings-sync-summary"><div><strong>{{profile.name}}</strong><br><small>{{profile.systemId}} · exported {{profile.exportedAt}}</small></div><div><strong>{{applyCount}}</strong> profile defaults ready<br><small>{{reviewCount}} settings need a decision</small></div></header>
-    {{#unless isCompatible}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> This is a {{profile.systemId}} profile. It cannot apply to this {{targetSystemId}} world.</p>{{/unless}}
-    {{#if settingsVaultActive}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> Settings Vault is active. Lex’s Settings Sync will exclude its settings so the two tools do not stomp on each other.</p>{{/if}}
-    <div class="settings-sync-actions"><button type="button" data-action="showLibrary"><i class="fa-solid fa-folder-open"></i> Browse Profiles</button><button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import JSON</button><button type="button" data-action="saveProfile"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button><button type="button" data-action="downloadProfile"><i class="fa-solid fa-download"></i> Download Copy</button><button type="button" data-action="clearProfile"><i class="fa-solid fa-xmark"></i> Clear</button><button type="button" data-action="applySelected" {{#unless isCompatible}}disabled{{/unless}}><i class="fa-solid fa-check"></i> Apply Profile Defaults</button></div>
+      <header class="settings-sync-summary">
+        <div><strong>{{profile.name}}</strong><small>{{profile.systemId}} profile · exported {{profile.exportedAt}}</small></div>
+        <div class="settings-sync-count"><strong>{{applyCount}}</strong><small>selected defaults</small></div>
+        <div class="settings-sync-count"><strong>{{reviewCount}}</strong><small>need review</small></div>
+      </header>
+      {{#unless isCompatible}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> This {{profile.systemId}} profile cannot apply to a {{targetSystemId}} world.</p>{{/unless}}
+      {{#if settingsVaultActive}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> Settings Vault is active. Its settings are protected from this profile.</p>{{/if}}
 
-    <section class="settings-sync-bucket policies"><h2><i class="fa-solid fa-sliders"></i> Profile rules</h2><p>Set the default once per module. “Review” leaves its visible settings for a deliberate choice. Protected settings always stay local.</p><ul>{{#each policyGroups}}<li><strong>{{namespace}}</strong><select data-policy-module="{{namespace}}"><option value="always" {{#if (eq policy "always")}}selected{{/if}}>Always sync</option><option value="review" {{#if (eq policy "review")}}selected{{/if}}>Review</option><option value="never" {{#if (eq policy "never")}}selected{{/if}}>Never sync</option></select></li>{{/each}}</ul></section>
+      <div class="settings-sync-main">
+        <div class="settings-sync-actions">
+          <button type="button" data-action="showLibrary"><i class="fa-solid fa-folder-open"></i> Browse profiles</button>
+          <button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import JSON</button>
+          <button type="button" data-action="saveProfile"><i class="fa-solid fa-floppy-disk"></i> Save profile</button>
+          <button type="button" data-action="downloadProfile"><i class="fa-solid fa-download"></i> Download copy</button>
+          <button type="button" data-action="clearProfile"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
 
-    <section class="settings-sync-bucket recommended"><h2><i class="fa-solid fa-check"></i> Profile defaults ({{recommended.length}})</h2><p>These follow Always Sync rules and are selected to apply.</p>{{#if recommended.length}}<ul>{{#each recommended}}<li><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <strong>{{settingLabel}}</strong><small>{{namespace}} · {{scope}} setting</small></li>{{/each}}</ul>{{else}}<p class="hint">Nothing needs changing.</p>{{/if}}</section>
+        <section class="settings-sync-section recommended">
+          <h2>Profile defaults <span>{{recommended.length}}</span></h2>
+          <p>Selected values follow the profile’s Always sync rules. They do not apply until you review and confirm them.</p>
+          {{#if recommended.length}}
+            <ul>{{#each recommended}}<li><label><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <strong>{{settingLabel}}</strong><small>{{namespace}}</small></label></li>{{/each}}</ul>
+          {{else}}<p class="hint">Nothing needs changing.</p>{{/if}}
+        </section>
 
-    <section class="settings-sync-bucket review"><h2><i class="fa-solid fa-hand"></i> Needs your decision ({{review.length}})</h2><p>Select a value to apply it once. You can also change its saved profile rule here.</p>{{#if review.length}}<ul>{{#each review}}<li><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <strong>{{settingLabel}}</strong><select data-policy-setting="{{fullKey}}"><option value="inherit" {{#if (eq settingPolicy "inherit")}}selected{{/if}}>Use module rule</option><option value="always" {{#if (eq settingPolicy "always")}}selected{{/if}}>Always sync this setting</option><option value="review" {{#if (eq settingPolicy "review")}}selected{{/if}}>Review this setting</option><option value="never" {{#if (eq settingPolicy "never")}}selected{{/if}}>Never sync this setting</option><option value="global-never">Never sync in any profile</option></select><small>{{reason}}</small></li>{{/each}}</ul>{{else}}<p class="hint">Nothing is waiting on a setting-by-setting decision.</p>{{/if}}</section>
+        <section class="settings-sync-section review">
+          <h2>Needs your decision <span>{{review.length}}</span></h2>
+          <p>Select a setting to apply it once, then choose whether it should inherit the module rule or get its own rule.</p>
+          {{#if review.length}}
+            <ul>{{#each review}}<li>
+              <label><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <strong>{{settingLabel}}</strong><small>{{reason}}</small></label>
+              <select data-policy-setting="{{fullKey}}">
+                <option value="inherit" {{#if (eq settingPolicy "inherit")}}selected{{/if}}>Use module rule</option>
+                <option value="always" {{#if (eq settingPolicy "always")}}selected{{/if}}>Always sync this setting</option>
+                <option value="review" {{#if (eq settingPolicy "review")}}selected{{/if}}>Review this setting</option>
+                <option value="never" {{#if (eq settingPolicy "never")}}selected{{/if}}>Never sync this setting</option>
+                <option value="global-never">Never sync in any profile</option>
+              </select>
+            </li>{{/each}}</ul>
+          {{else}}<p class="hint">Nothing is waiting on a setting-by-setting decision.</p>{{/if}}
+        </section>
 
-    <section class="settings-sync-bucket modules"><h2><i class="fa-solid fa-puzzle-piece"></i> Module state ({{moduleActions.length}})</h2><p>Required profile modules can activate after you confirm. Target-world modules are never changed until you decide.</p>{{#if moduleActions.length}}<ul>{{#each moduleActions}}<li>{{#if (eq status "target-only")}}<select data-target-module="{{moduleIndex}}"><option value="ignore" selected>Ignore once</option><option value="keep">Keep as campaign-specific</option><option value="add-required">Add to profile: required</option><option value="add-optional">Add to profile: optional</option><option value="deactivate">Deactivate in this world</option></select>{{else}}<input type="checkbox" data-module-index="{{moduleIndex}}" {{checked selected}}>{{/if}} <strong>{{title}}</strong><small>{{reason}}</small></li>{{/each}}</ul>{{else}}<p class="hint">The active module set already matches the profile.</p>{{/if}}</section>
-    {{#if unavailable.length}}<details class="settings-sync-skipped"><summary>{{unavailable.length}} profile module(s) unavailable here</summary><ul>{{#each unavailable}}<li><strong>{{title}}</strong>{{#if manifest}} — <a href="{{manifest}}" target="_blank" rel="noopener">manifest</a>{{/if}}</li>{{/each}}</ul></details>{{/if}}
-      {{#if skipped.length}}<details class="settings-sync-skipped"><summary>{{skipped.length}} protected, unavailable, unchanged, or internal setting(s) ignored</summary><ul>{{#each skipped}}<li><code>{{fullKey}}</code> — {{reason}}</li>{{/each}}</ul></details>{{/if}}
+        <section class="settings-sync-section modules">
+          <h2>Module state <span>{{moduleActions.length}}</span></h2>
+          <p>Profile modules can activate only after confirmation. Target-world modules stay untouched until you make a choice.</p>
+          {{#if moduleActions.length}}
+            <ul>{{#each moduleActions}}<li>
+              {{#if (eq status "target-only")}}
+                <select data-target-module="{{moduleIndex}}">
+                  <option value="ignore" selected>Ignore once</option>
+                  <option value="keep">Keep as campaign-specific</option>
+                  <option value="add-required">Add to profile: required</option>
+                  <option value="add-optional">Add to profile: optional</option>
+                  <option value="deactivate">Deactivate in this world</option>
+                </select>
+              {{else}}<input type="checkbox" data-module-index="{{moduleIndex}}" {{checked selected}}>{{/if}}
+              <label><strong>{{title}}</strong><small>{{reason}}</small></label>
+            </li>{{/each}}</ul>
+          {{else}}<p class="hint">The active module set already matches the profile.</p>{{/if}}
+        </section>
+
+        <details class="settings-sync-section policies">
+          <summary>Profile rules</summary>
+          <p>Set a default for each module. Native Core configuration is handled deliberately; campaign identity, protected local settings, and hidden bookkeeping never transfer.</p>
+          <ul>{{#each policyGroups}}<li><strong>{{namespace}}</strong><select data-policy-module="{{namespace}}"><option value="always" {{#if (eq policy "always")}}selected{{/if}}>Always sync</option><option value="review" {{#if (eq policy "review")}}selected{{/if}}>Review</option><option value="never" {{#if (eq policy "never")}}selected{{/if}}>Never sync</option></select></li>{{/each}}</ul>
+        </details>
+
+        {{#if unavailable.length}}<details class="settings-sync-section skipped"><summary>{{unavailable.length}} profile module(s) unavailable here</summary><ul>{{#each unavailable}}<li><strong>{{title}}</strong>{{#if manifest}} — <a href="{{manifest}}" target="_blank" rel="noopener">manifest</a>{{/if}}</li>{{/each}}</ul></details>{{/if}}
+        {{#if skipped.length}}<details class="settings-sync-section skipped"><summary>{{skipped.length}} protected, unavailable, unchanged, or hidden setting(s) ignored</summary><ul>{{#each skipped}}<li><strong>{{fullKey}}</strong><small>{{reason}}</small></li>{{/each}}</ul></details>{{/if}}
+      </div>
+
+      <footer class="settings-sync-commit">
+        <div><strong>Review before applying</strong><small>The next step shows every selected change and asks for confirmation.</small></div>
+        <button type="button" data-action="applySelected" {{#unless isCompatible}}disabled{{/unless}}><i class="fa-solid fa-list-check"></i> Review selected changes</button>
+      </footer>
     {{else}}
-      <p class="settings-sync-lede">Build a system-specific profile from this world, then apply its approved defaults elsewhere. Only settings visible in Foundry's Settings sidebar are included.</p>
-      <div class="settings-sync-actions"><button type="button" data-action="createProfile"><i class="fa-solid fa-file-plus"></i> Create Profile From This World</button><button type="button" data-action="showLibrary"><i class="fa-solid fa-folder-open"></i> Browse Saved Profiles</button><button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import a JSON File</button></div>
-      <p class="hint">Per-user values, campaign identity, encounter Manual Mode, Automatic Rune Progression, Variant Rules, Settings Vault state, and other protected local settings stay out.</p>
+      <p class="settings-sync-lede">Build a system-specific profile from this world, then apply its approved defaults elsewhere. Only settings visible in Foundry’s Settings sidebar are included.</p>
+      <div class="settings-sync-actions"><button type="button" data-action="createProfile"><i class="fa-solid fa-file-plus"></i> Create profile from this world</button><button type="button" data-action="showLibrary"><i class="fa-solid fa-folder-open"></i> Browse saved profiles</button><button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import a JSON file</button></div>
+      <p class="hint">Per-user values, campaign identity, encounter Manual Mode, Automatic Rune Progression, Variant Rules, Settings Vault state, and hidden Core bookkeeping stay out. Native Core configuration sections are included for review.</p>
     {{/if}}
   {{/if}}
 </div>
