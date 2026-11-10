@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- Fixed the profile review layout so each setting title, description, and value comparison stay together and remain readable.
+- Separated profile warnings from the action bar so Settings Vault notices no longer overlap controls.
+
 ## 0.2.2
 
 - Prompt for a profile name when creating or saving, allowing multiple named profiles in the Foundry data library.

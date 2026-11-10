@@ -6,6 +6,7 @@
   padding: 1rem;
   overflow: hidden;
 }
+.settings-sync-heading { display: grid; gap: .65rem; min-width: 0; }
 .settings-sync-main { overflow-y: auto; min-height: 0; padding-right: .35rem; }
 .settings-sync-main > * + * { margin-top: .85rem; }
 .settings-sync-lede { font-size: 1.05rem; margin: 0; }
@@ -20,9 +21,12 @@
 .settings-sync-section p, .settings-sync-section ul { margin: .35rem 0; }
 .settings-sync-section ul { list-style: none; padding: 0; }
 .settings-sync-section li { border-top: 1px solid var(--color-border-light-2); padding: .45rem 0; }
-.settings-sync-section li label { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .45rem; align-items: start; }
+.settings-sync-section li label { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .6rem; align-items: start; }
+.settings-sync-section li label > input[type="checkbox"] { margin-top: .2rem; }
+.settings-sync-setting-copy { display: grid; gap: .15rem; min-width: 0; }
 .settings-sync-section li strong, .settings-sync-section li small { display: block; }
 .settings-sync-section li small { color: var(--color-text-subtle); }
+.settings-sync-setting-copy strong, .settings-sync-setting-copy small { overflow-wrap: anywhere; }
 .settings-sync-section.review { border-left-color: var(--color-level-warning); }
 .settings-sync-section.recommended { border-left-color: var(--color-level-success); }
 .settings-sync-section.modules { border-left-color: var(--color-level-info); }

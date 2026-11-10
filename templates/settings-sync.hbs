@@ -4,25 +4,29 @@
     <header class="settings-sync-summary">
       <div><strong>Saved profile library</strong><small>Profiles live in Foundry’s data folder and are available to worlds on this server.</small></div>
     </header>
-    <div class="settings-sync-actions">
-      <button type="button" data-action="closeLibrary"><i class="fa-solid fa-arrow-left"></i> Back</button>
-      <button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import JSON file</button>
+    <div class="settings-sync-main">
+      <div class="settings-sync-actions">
+        <button type="button" data-action="closeLibrary"><i class="fa-solid fa-arrow-left"></i> Back</button>
+        <button type="button" data-action="chooseProfile"><i class="fa-solid fa-file-import"></i> Import JSON file</button>
+      </div>
+      {{#if library.length}}
+        <section class="settings-sync-section library">
+          <h2>Saved profiles</h2>
+          <ul>{{#each library}}<li><label><span class="settings-sync-setting-copy"><strong>{{name}}</strong><small>{{systemId}} · {{fileName}}</small></span></label><button type="button" data-action="openLibraryProfile" data-path="{{path}}">Open</button></li>{{/each}}</ul>
+        </section>
+      {{else}}<p class="hint">The library is empty. Create a profile from a source world, then save it here.</p>{{/if}}
     </div>
-    {{#if library.length}}
-      <section class="settings-sync-section library">
-        <h2>Saved profiles</h2>
-        <ul>{{#each library}}<li><label><strong>{{name}}</strong><small>{{systemId}} · {{fileName}}</small></label><button type="button" data-action="openLibraryProfile" data-path="{{path}}">Open</button></li>{{/each}}</ul>
-      </section>
-    {{else}}<p class="hint">The library is empty. Create a profile from a source world, then save it here.</p>{{/if}}
   {{else}}
     {{#if hasProfile}}
-      <header class="settings-sync-summary">
-        <div><strong>{{profile.name}}</strong><small>{{profile.systemId}} profile · saved {{#if profile.savedAt}}{{profile.savedAt}}{{else}}{{profile.exportedAt}}{{/if}}</small></div>
-        <div class="settings-sync-count"><strong>{{applyCount}}</strong><small>selected defaults</small></div>
-        <div class="settings-sync-count"><strong>{{reviewCount}}</strong><small>need review</small></div>
-      </header>
-      {{#unless isCompatible}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> This {{profile.systemId}} profile cannot apply to a {{targetSystemId}} world.</p>{{/unless}}
-      {{#if settingsVaultActive}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> Settings Vault is active. Its settings are protected from this profile.</p>{{/if}}
+      <div class="settings-sync-heading">
+        <header class="settings-sync-summary">
+          <div><strong>{{profile.name}}</strong><small>{{profile.systemId}} profile · saved {{#if profile.savedAt}}{{profile.savedAt}}{{else}}{{profile.exportedAt}}{{/if}}</small></div>
+          <div class="settings-sync-count"><strong>{{applyCount}}</strong><small>selected defaults</small></div>
+          <div class="settings-sync-count"><strong>{{reviewCount}}</strong><small>need review</small></div>
+        </header>
+        {{#unless isCompatible}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> This {{profile.systemId}} profile cannot apply to a {{targetSystemId}} world.</p>{{/unless}}
+        {{#if settingsVaultActive}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> Settings Vault is active. Its settings are protected from this profile.</p>{{/if}}
+      </div>
 
       <div class="settings-sync-main">
         <div class="settings-sync-actions">
@@ -37,7 +41,7 @@
           <h2>Profile defaults <span>{{recommended.length}}</span></h2>
           <p>Selected values follow the profile’s Always sync rules. They do not apply until you review and confirm them.</p>
           {{#if recommended.length}}
-            <ul>{{#each recommended}}<li><label><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <strong>{{settingLabel}}</strong>{{#if settingHint}}<small>{{settingHint}}</small>{{/if}}<small>Profile: {{profileValue}} · This world: {{targetValue}}</small></label></li>{{/each}}</ul>
+            <ul>{{#each recommended}}<li><label><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <span class="settings-sync-setting-copy"><strong>{{settingLabel}}</strong>{{#if settingHint}}<small>{{settingHint}}</small>{{/if}}<small>Profile: {{profileValue}} · This world: {{targetValue}}</small></span></label></li>{{/each}}</ul>
           {{else}}<p class="hint">Nothing needs changing.</p>{{/if}}
         </section>
 
@@ -46,7 +50,7 @@
           <p>Select a setting to apply it once, then choose whether it should inherit the module rule or get its own rule.</p>
           {{#if review.length}}
             <ul>{{#each review}}<li>
-              <label><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <strong>{{settingLabel}}</strong>{{#if settingHint}}<small>{{settingHint}}</small>{{/if}}<small>{{reason}} · Profile: {{profileValue}} · This world: {{targetValue}}</small></label>
+              <label><input type="checkbox" data-row-index="{{rowIndex}}" {{checked selected}}> <span class="settings-sync-setting-copy"><strong>{{settingLabel}}</strong>{{#if settingHint}}<small>{{settingHint}}</small>{{/if}}<small>{{reason}} · Profile: {{profileValue}} · This world: {{targetValue}}</small></span></label>
               <select data-policy-setting="{{fullKey}}">
                 <option value="inherit" {{#if (eq settingPolicy "inherit")}}selected{{/if}}>Use module rule</option>
                 <option value="always" {{#if (eq settingPolicy "always")}}selected{{/if}}>Always sync this setting</option>
