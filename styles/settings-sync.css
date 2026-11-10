@@ -3,13 +3,20 @@
 .settings-sync-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .settings-sync-actions button { flex: 0 1 auto; }
 .settings-sync-summary { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem; border: 1px solid var(--color-border-light-2); border-radius: 4px; }
-.settings-sync-table-wrap { max-height: 47vh; overflow: auto; border: 1px solid var(--color-border-light-2); }
-.settings-sync-table { width: 100%; border-collapse: collapse; }
-.settings-sync-table th { position: sticky; top: 0; background: var(--color-cool-5); color: var(--color-light-1); }
-.settings-sync-table th, .settings-sync-table td { padding: .45rem .55rem; text-align: left; border-bottom: 1px solid var(--color-border-light-2); vertical-align: top; }
-.settings-sync-table code { white-space: nowrap; font-size: .84em; }
-.settings-sync-status { font-weight: bold; text-transform: uppercase; }
-.status-apply .settings-sync-status { color: var(--color-level-success); }
-.status-ask .settings-sync-status { color: var(--color-level-warning); }
+.settings-sync-bucket { border: 1px solid var(--color-border-light-2); border-left-width: 4px; padding: .75rem 1rem; }
+.settings-sync-bucket h2 { font-size: 1.05rem; margin: 0 0 .25rem; }
+.settings-sync-bucket p, .settings-sync-bucket ul { margin: .35rem 0; }
+.settings-sync-bucket ul { list-style: none; padding: 0; max-height: 24vh; overflow: auto; }
+.settings-sync-bucket li { display: grid; grid-template-columns: auto 1fr; gap: .25rem .5rem; padding: .35rem 0; border-top: 1px solid var(--color-border-light-2); }
+.settings-sync-bucket li small { grid-column: 2; color: var(--color-text-subtle); }
+.settings-sync-bucket li select { min-width: 10rem; }
+.settings-sync-bucket.policies ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .5rem; max-height: 20vh; }
+.settings-sync-bucket.policies li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; border: 1px solid var(--color-border-light-2); padding: .4rem .55rem; }
+.settings-sync-bucket.modules { border-left-color: var(--color-level-info); }
+.settings-sync-bucket.library li { align-items: center; }
+.settings-sync-bucket.library button { justify-self: end; }
+.settings-sync-bucket.recommended { border-left-color: var(--color-level-success); }
+.settings-sync-bucket.review { border-left-color: var(--color-level-warning); }
+.settings-sync-alert { margin: 0; padding: .6rem .8rem; border: 1px solid var(--color-level-error); color: var(--color-level-error); }
 .settings-sync-skipped { max-height: 16vh; overflow: auto; }
 .settings-sync-skipped ul { margin: .5rem 0; }
