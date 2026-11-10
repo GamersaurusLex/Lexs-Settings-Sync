@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2
+
+- Prompt for a profile name when creating or saving, allowing multiple named profiles in the Foundry data library.
+- Preserve the main panel scroll position when a sync policy changes.
+- Replace raw setting keys and hidden-setting counts with readable labels, descriptions, and profile-versus-world values.
+- Exclude deprecated Foundry settings from profile capture.
+
 ## 0.2.1
 
 - Reworked the review screen into one main scroll area with a fixed Review Selected Changes control.

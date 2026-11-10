@@ -16,6 +16,7 @@ async function ensureProfileDirectory() {
 
 function targetSettings() {
   return [...game.settings.settings.entries()].map(([fullKey, setting]) => {
+    if (setting.deprecated) return null;
     try { return { fullKey, namespace: setting.namespace, key: setting.key, scope: setting.scope, value: game.settings.get(setting.namespace, setting.key), default: setting.default, config: setting.config }; }
     catch (_error) { return null; }
   }).filter(Boolean);
@@ -34,6 +35,14 @@ function displayValue(value) {
   if (typeof value === "object") return `Configured (${Object.keys(value).length} saved value${Object.keys(value).length === 1 ? "" : "s"})`;
   const text = String(value);
   return text.length > 72 ? `${text.slice(0, 69)}…` : text;
+}
+
+function settingLabel(fullKey) {
+  const setting = game.settings.settings.get(fullKey);
+  const namespace = String(setting?.namespace ?? namespaceOf(fullKey));
+  const packageTitle = namespace === "core" ? "Core" : game.modules.get(namespace)?.title ?? namespace;
+  const name = game.i18n.localize(setting?.name ?? fullKey);
+  return `${packageTitle} — ${name}`;
 }
 
 function titleize(value) { return String(value).toLowerCase().split(/[_-]+/).map(word => word ? `${word[0].toUpperCase()}${word.slice(1)}` : word).join(" "); }
@@ -70,6 +79,20 @@ function exportProfile({ includeSensitive = false } = {}) {
   };
 }
 
+async function askProfileName(initialName, title, submitLabel) {
+  const result = await DialogV2.input({
+    window: { title }, rejectClose: false,
+    content: `<p>Give this reusable profile a clear name. Profiles with different names are saved separately.</p><div class="form-group"><label>Profile name <input name="profileName" type="text" value="${esc(initialName)}" maxlength="96" required autofocus></label></div>`,
+    ok: { label: submitLabel }
+  });
+  const name = String(result?.profileName ?? "").trim();
+  if (!name) {
+    if (result) ui.notifications.warn("A settings profile needs a name.");
+    return null;
+  }
+  return name;
+}
+
 class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: `${MODULE_ID}-app`, classes: [MODULE_ID], tag: "section",
@@ -95,21 +118,32 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.moduleRows = buildModulePlan(this.profile, packages, this.#exceptions());
   }
 
+  async #renderPreservingScroll() {
+    const scrollTop = this.element.querySelector(".settings-sync-main")?.scrollTop ?? 0;
+    await this.render({ force: true });
+    requestAnimationFrame(() => {
+      const main = this.element.querySelector(".settings-sync-main");
+      if (main) main.scrollTop = scrollTop;
+    });
+  }
+
   async _prepareContext() {
     const offered = this.rows.map((row, rowIndex) => ({ ...row, rowIndex })).filter(row => row.status !== "skip");
     const decorate = row => ({ ...row,
-      settingLabel: game.i18n.localize(game.settings.settings.get(row.fullKey)?.name ?? row.fullKey),
-      settingPolicy: this.profile.settingPolicies?.[row.fullKey] ?? "inherit"
+      settingLabel: settingLabel(row.fullKey),
+      settingHint: game.i18n.localize(game.settings.settings.get(row.fullKey)?.hint ?? ""),
+      settingPolicy: this.profile.settingPolicies?.[row.fullKey] ?? "inherit",
+      profileValue: displayValue(row.value),
+      targetValue: (() => { try { return displayValue(game.settings.get(row.namespace, row.key)); } catch (_error) { return "Unavailable"; } })()
     });
     const recommended = offered.filter(row => row.status === "apply").map(decorate);
     const review = offered.filter(row => row.status === "review" || row.status === "ask").map(decorate);
-    const skipped = this.rows.filter(row => row.status === "skip");
     const moduleActions = this.moduleRows.map((row, moduleIndex) => ({ ...row, moduleIndex })).filter(row => row.status === "activate" || row.status === "review" || row.status === "target-only");
     const unavailable = this.moduleRows.filter(row => row.status === "unavailable");
     const policyGroups = this.profile ? [...new Set(this.profile.settings.filter(setting => isVisibleOrNativeCoreSetting(setting) && !isExcluded(setting.fullKey)).map(setting => setting.namespace))].sort().map(namespace => ({ namespace, policy: this.profile.modulePolicies?.[namespace] ?? "review" })) : [];
     return {
       hasProfile: Boolean(this.profile), isLibrary: this.mode === "library", profile: this.profile, library: this.library,
-      recommended, review, skipped, moduleActions, unavailable, policyGroups, applyCount: recommended.length,
+      recommended, review, moduleActions, unavailable, policyGroups, applyCount: recommended.length,
       reviewCount: review.length, moduleActionCount: moduleActions.filter(row => row.selected).length, targetSystemId: game.system.id,
       isCompatible: this.profile?.systemId === game.system.id,
       settingsVaultActive: Boolean(game.modules.get("settings-vault")?.active)
@@ -125,7 +159,7 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
     });
     this.element.querySelectorAll("select[data-policy-module]").forEach(select => select.addEventListener("change", async event => {
       this.profile.modulePolicies[event.currentTarget.dataset.policyModule] = event.currentTarget.value;
-      this.#replan(); await this.render({ force: true });
+      this.#replan(); await this.#renderPreservingScroll();
     }));
     this.element.querySelectorAll("select[data-policy-setting]").forEach(select => select.addEventListener("change", async event => {
       const value = event.currentTarget.value, fullKey = event.currentTarget.dataset.policySetting;
@@ -135,13 +169,13 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
         await game.settings.set(MODULE_ID, "globalNeverSync", [...neverSync].sort());
       } else if (value === "inherit") delete this.profile.settingPolicies[fullKey];
       else this.profile.settingPolicies[fullKey] = value;
-      this.#replan(); await this.render({ force: true });
+      this.#replan(); await this.#renderPreservingScroll();
     }));
     this.element.querySelectorAll("select[data-target-module]").forEach(select => select.addEventListener("change", async event => {
       const row = this.moduleRows[Number(event.currentTarget.dataset.targetModule)];
       row.decision = event.currentTarget.value;
       row.selected = row.decision === "deactivate";
-      await this.render({ force: true });
+      await this.#renderPreservingScroll();
     }));
   }
 
@@ -154,14 +188,26 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static async #createProfile() {
     const includeSensitive = await DialogV2.confirm({ window: { title: "Include sensitive settings?" }, rejectClose: false,
       content: "<p>Include the Campaign Index endpoint and secret in this profile?</p><p>Keep saved profiles with sensitive values private.</p>", yes: { label: "Include sensitive values" }, no: { label: "Exclude sensitive values" } });
-    this.profile = exportProfile({ includeSensitive }); this.mode = "profile"; this.#replan(); await this.render({ force: true });
+    const profile = exportProfile({ includeSensitive });
+    const name = await askProfileName(profile.name, "Name settings profile", "Create profile");
+    if (!name) return;
+    profile.name = name;
+    this.profile = profile; this.mode = "profile"; this.#replan(); await this.render({ force: true });
   }
   static #chooseProfile() { this.element.querySelector("input[type=file]")?.click(); }
   static async #showLibrary() {
     try {
       await ensureProfileDirectory();
       const result = await FilePicker.browse("data", PROFILE_DIR, { extensions: [".json"] });
-      this.library = result.files.map(path => ({ path, name: path.split("/").at(-1) })); this.mode = "library"; await this.render({ force: true });
+      this.library = await Promise.all(result.files.map(async path => {
+        const fileName = path.split("/").at(-1);
+        try {
+          const profile = await (await fetch(path)).json();
+          return { path, name: profile.name ?? fileName, fileName, systemId: profile.systemId };
+        } catch (_error) { return { path, name: fileName, fileName }; }
+      }));
+      this.library.sort((a, b) => a.name.localeCompare(b.name));
+      this.mode = "library"; await this.render({ force: true });
     } catch (error) { ui.notifications.error(`Could not open the Settings Sync library: ${error.message}`); }
   }
   static async #openLibraryProfile(event, button) {
@@ -170,6 +216,10 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
   static async #saveProfile() {
     try {
+      const name = await askProfileName(this.profile.name, "Save settings profile", "Save profile");
+      if (!name) return;
+      this.profile.name = name;
+      this.profile.savedAt = new Date().toISOString();
       await ensureProfileDirectory();
       const file = new File([JSON.stringify(this.profile, null, 2)], profileFileName(this.profile), { type: "application/json" });
       await FilePicker.upload("data", PROFILE_DIR, file, {}, { notify: false });
