@@ -1,4 +1,4 @@
-import { MODULE_ID, buildModulePlan, buildPlan, isExcluded, isSensitive, isVisibleOrNativeCoreSetting, namespaceOf } from "./plan.mjs";
+import { MODULE_ID, areSystemsCompatible, buildModulePlan, buildPlan, isExcluded, isSensitive, isVisibleOrNativeCoreSetting, namespaceOf } from "./plan.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin, DialogV2 } = foundry.applications.api;
 const PROFILE_DIR = "settings-sync/profiles";
@@ -145,7 +145,8 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
       hasProfile: Boolean(this.profile), isLibrary: this.mode === "library", profile: this.profile, library: this.library,
       recommended, review, moduleActions, unavailable, policyGroups, applyCount: recommended.length,
       reviewCount: review.length, moduleActionCount: moduleActions.filter(row => row.selected).length, targetSystemId: game.system.id,
-      isCompatible: this.profile?.systemId === game.system.id,
+      isCompatible: areSystemsCompatible(this.profile?.systemId, game.system.id),
+      isPaizoCrossSystem: this.profile?.systemId !== game.system.id && areSystemsCompatible(this.profile?.systemId, game.system.id),
       settingsVaultActive: Boolean(game.modules.get("settings-vault")?.active)
     };
   }

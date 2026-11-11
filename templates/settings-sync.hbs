@@ -25,6 +25,7 @@
           <div class="settings-sync-count"><strong>{{reviewCount}}</strong><small>need review</small></div>
         </header>
         {{#unless isCompatible}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> This {{profile.systemId}} profile cannot apply to a {{targetSystemId}} world.</p>{{/unless}}
+        {{#if isPaizoCrossSystem}}<p class="settings-sync-alert"><i class="fa-solid fa-circle-info"></i> Shared PF2e/SF2e settings can apply here. {{profile.systemId}} system settings stay excluded.</p>{{/if}}
         {{#if settingsVaultActive}}<p class="settings-sync-alert"><i class="fa-solid fa-triangle-exclamation"></i> Settings Vault is active. Its settings are protected from this profile.</p>{{/if}}
       </div>
 

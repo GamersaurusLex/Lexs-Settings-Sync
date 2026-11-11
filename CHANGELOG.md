@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4
+
+- Allow PF2e and SF2e profiles to share portable Core and module settings.
+- Keep PF2e- and SF2e-owned settings out of the other system, with a clear in-app notice.
+
 ## 0.2.3
 
 - Fixed the profile review layout so each setting title, description, and value comparison stay together and remain readable.

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildModulePlan, buildPlan, isExcluded, isSensitive, isVisibleOrNativeCoreSetting, namespaceOf, keyPart } from "../scripts/plan.mjs";
+import { areSystemsCompatible, buildModulePlan, buildPlan, isExcluded, isSensitive, isVisibleOrNativeCoreSetting, namespaceOf, keyPart } from "../scripts/plan.mjs";
 
 const setting = (fullKey, value, defaultValue = value, extras = {}) => ({ fullKey, namespace: namespaceOf(fullKey), key: keyPart(fullKey), scope: "world", value, default: defaultValue, config: true, ...extras });
 
@@ -11,6 +11,9 @@ assert.equal(isExcluded("hero-bonus-points.bonusDie"), true);
 assert.equal(isExcluded("core.permissions"), false);
 assert.equal(isSensitive("campaign-index.syncSecret"), true);
 assert.equal(isSensitive("example.apiToken"), true);
+assert.equal(areSystemsCompatible("pf2e", "sf2e"), true);
+assert.equal(areSystemsCompatible("sf2e", "pf2e"), true);
+assert.equal(areSystemsCompatible("pf2e", "dnd5e"), false);
 
 const profile = { systemId: "pf2e", packages: { "some-module": "1.0.0", "campaign-index": "1.0.0" }, modulePolicies: { "some-module": "always" }, settings: [
   setting("some-module.clean", true), setting("some-module.changed", 4), setting("influence-encounters.manualMode", true), setting("some-module.user", true, true, { scope: "user" })
@@ -34,6 +37,9 @@ assert.equal(buildPlan(hiddenProfile, hiddenTarget, { targetSystemId: "pf2e" }).
 const permissions = setting("core.permissions", { PLAYER: ["ACTOR_CREATE"] }, {}, { config: null });
 assert.equal(isVisibleOrNativeCoreSetting(permissions), true);
 assert.equal(buildPlan({ ...profile, settings: [permissions] }, [setting("core.permissions", {}, {}, { config: null })], { targetSystemId: "pf2e" }).find(row => row.fullKey === "core.permissions").status, "ask");
+const crossSystemRows = buildPlan({ ...profile, settings: [setting("some-module.clean", true), setting("pf2e.critRule", "doubledamage")] }, [setting("some-module.clean", false), setting("pf2e.critRule", "alternate")] , { targetSystemId: "sf2e", targetPackages: { "some-module": "1.0.0" } });
+assert.equal(crossSystemRows.find(row => row.fullKey === "some-module.clean").status, "apply");
+assert.equal(crossSystemRows.find(row => row.fullKey === "pf2e.critRule").status, "skip");
 const moduleRows = buildModulePlan({ packages: { "some-module": { active: true, title: "Some Module" } }, modulePolicies: { "some-module": "always" } }, { "some-module": { active: false, title: "Some Module" }, "campaign-only": { active: true, title: "Campaign Only" } });
 assert.equal(moduleRows.find(row => row.id === "some-module").status, "activate");
 assert.equal(moduleRows.find(row => row.id === "campaign-only").status, "target-only");

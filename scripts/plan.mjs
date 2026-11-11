@@ -23,6 +23,12 @@ export const keyPart = fullKey => String(fullKey).slice(String(fullKey).indexOf(
 export const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 export const packageVersion = value => typeof value === "string" ? value : value?.version;
 export const packageActive = value => typeof value === "object" ? Boolean(value.active) : Boolean(value);
+const PAIZO_D20_SYSTEMS = new Set(["pf2e", "sf2e"]);
+
+export function areSystemsCompatible(sourceSystemId, targetSystemId) {
+  if (!sourceSystemId || !targetSystemId) return false;
+  return sourceSystemId === targetSystemId || (PAIZO_D20_SYSTEMS.has(sourceSystemId) && PAIZO_D20_SYSTEMS.has(targetSystemId));
+}
 
 export function isExcluded(fullKey) {
   const namespace = namespaceOf(fullKey);
@@ -47,7 +53,7 @@ function policyRow(source, target, { sourcePackages = {}, targetPackages = {}, s
   if (!isVisibleOrNativeCoreSetting(target)) return { status: "skip", reason: "Hidden or internal setting" };
   if (fullKey === "core.permissions") return { status: "ask", reason: "Native User Permissions configuration requires review" };
   const namespace = namespaceOf(fullKey);
-  if (sourceSystemId && targetSystemId && sourceSystemId !== targetSystemId && (namespace === sourceSystemId || namespace === targetSystemId)) return { status: "ask", reason: "Game system differs" };
+  if (sourceSystemId && targetSystemId && sourceSystemId !== targetSystemId && (namespace === sourceSystemId || namespace === targetSystemId)) return { status: "skip", reason: "System-owned setting does not transfer" };
   if (sourcePackages[namespace] && targetPackages[namespace] && packageVersion(sourcePackages[namespace]) !== packageVersion(targetPackages[namespace])) return { status: "ask", reason: "Package version differs" };
   return { status: "apply", reason: "Profile default" };
 }
