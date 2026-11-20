@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- After saving a profile, open the saved-profile library so the GM can immediately confirm that the new profile exists.
+
 ## 0.2.4
 
 - Allow PF2e and SF2e profiles to share portable Core and module settings.

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { areSystemsCompatible, buildModulePlan, buildPlan, isExcluded, isSensitive, isVisibleOrNativeCoreSetting, namespaceOf, keyPart } from "../scripts/plan.mjs";
+
+const appSource = readFileSync(new URL("../scripts/settings-sync.mjs", import.meta.url), "utf8");
 
 const setting = (fullKey, value, defaultValue = value, extras = {}) => ({ fullKey, namespace: namespaceOf(fullKey), key: keyPart(fullKey), scope: "world", value, default: defaultValue, config: true, ...extras });
 
@@ -43,4 +46,5 @@ assert.equal(crossSystemRows.find(row => row.fullKey === "pf2e.critRule").status
 const moduleRows = buildModulePlan({ packages: { "some-module": { active: true, title: "Some Module" } }, modulePolicies: { "some-module": "always" } }, { "some-module": { active: false, title: "Some Module" }, "campaign-only": { active: true, title: "Campaign Only" } });
 assert.equal(moduleRows.find(row => row.id === "some-module").status, "activate");
 assert.equal(moduleRows.find(row => row.id === "campaign-only").status, "target-only");
+assert.match(appSource, /await SettingsSyncApp\.#showLibrary\.call\(this\);/, "saving a profile returns to the library so the saved file is visible");
 console.log("Settings Sync planner tests passed.");

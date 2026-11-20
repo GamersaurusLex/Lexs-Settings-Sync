@@ -225,6 +225,7 @@ class SettingsSyncApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const file = new File([JSON.stringify(this.profile, null, 2)], profileFileName(this.profile), { type: "application/json" });
       await FilePicker.upload("data", PROFILE_DIR, file, {}, { notify: false });
       ui.notifications.info(`Saved ${this.profile.name} in the Settings Sync library.`);
+      await SettingsSyncApp.#showLibrary.call(this);
     } catch (error) { ui.notifications.error(`Could not save this profile: ${error.message}`); }
   }
   static #downloadProfile() { foundry.utils.saveDataToFile(JSON.stringify(this.profile, null, 2), "application/json", profileFileName(this.profile)); }
